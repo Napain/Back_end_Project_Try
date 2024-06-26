@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block content %}
+        <article class="media content-section">
+          <img class="rounded-circle article-img" src="{{ url_for('static', filename='images/'+post.author.image_file) }}" alt="">
+          <div class="media-body">
+            <div class="article-metadata">
+              <span style="font-size:1.5em"> {{ post.author.username }}</span>
+              <small class="text-muted">{{ post.date_posted.strftime('%d-%m-%Y') }}</small>
+              {% if post.author == current_user %}
+                <div>
+                  <a class="btn btn-secondary btn-small" href="{{ url_for ('update_post', post_id = post.id)}}"> Update </a>
+                  <a class="btn btn-secondary btn-small" href="{{ url_for ('subpost', post_id = post.id)}}"> Add </a>
+                  <button type="button" class="btn btn-danger btn-primary" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    Delete
+                  </button>
+                </div>
+              {% endif %}
+            </div>
+            <h2 class="article-title"> {{ post.title }}</h2>
+            <p class="article-content">{{ post.content }}</p>
+            <h3>{{ post.price }} € </h3>
+          </div>
+        </article>
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5" id="deleteModalLabel">Delete post?</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <form action="{{ url_for ('delete_post', post_id = post.id)}}" method="POST">
+                  <input class="btn btn-danger"  type="submit"  value="Delete">
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% for item in subposts %}
+          <article class="media content-section">
+              <div class="media-body">
+                <div class="article-metadata">
+                  <small class="text-muted">{{ item.date_posted.strftime('%d-%m-%Y') }}</small>
+                  <div>
+                    <a class="btn btn-secondary btn-small" href="{{ url_for ('update_subpost', item_id = item.id)}}"> Update </a>
+                    <a class="btn btn-danger  btn-small" href="{{ url_for ('delete_subpost', post_id = item.id)}}"> delete </a>
+                  </div>
+                </div>
+                <h2 style="color: #881212">{{ item.title }} </h2>
+                <h3>{{ item.price }} € </h3> 
+              </div>
+            </article>
+        {% endfor %}
+        <div class="article-metadata">
+          <h2> Your have left :</h2>
+          <h3>{{ total }}€</h3>
+          <img src="{{ url_for('plot_fig', post_id = post.id) }}" alt="Item Quantities Graph">
+          
+          </div>
+        
+       
+        
+{% endblock content %}

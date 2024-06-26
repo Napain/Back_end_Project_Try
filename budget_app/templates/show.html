@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+        <article class="media content-section">
+          <img class="rounded-circle article-img" src="{{ url_for('static', filename='images/'+post.author.image_file) }}" alt="">
+          <div class="media-body">
+            <div class="article-metadata">
+              <small class="text-muted">{{ subposts.date_posted.strftime('%d-%m-%Y') }}</small>
+                <div>
+                  <a class="btn btn-secondary btn-small" href="{{ url_for ('update_post', post_id = subpost.id)}}"> Update </a>
+
+                </div>
+            </div>
+            <h2 class="article-title"> {{ subposts.title }}</h2>
+            <h3>{{ subposts.price }} € </h3>
+          </div>
+
+{% endblock content %}
