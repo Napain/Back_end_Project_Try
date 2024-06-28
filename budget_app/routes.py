@@ -19,6 +19,7 @@ def first_page():
 
 
 @app.route("/home")
+@login_required
 def home():
     posts = Post.query.filter(Post.user_id == current_user.id).all()
 

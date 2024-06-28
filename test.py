@@ -1,83 +1,126 @@
 import unittest
+
 from budget_app import app, db
-from budget_app.forms import RegistrationForm, LoginForm, PostForm
+
+from budget_app.models import User, Post
+
+from flask_bcrypt import generate_password_hash
+
+ 
 
 class ItemTests(unittest.TestCase):
 
-    # Setup and teardown
+ 
+
     def setUp(self):
+
         app.config['TESTING'] = True
+
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+
+        app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
+
         self.app = app.test_client()
+
         with app.app_context():
+
+            
             db.create_all()
 
+            hashed_password = generate_password_hash('testpassword').decode('utf-8')
+
+            user = User(username='testuser', email='test@example.com', password=hashed_password)
+
+            db.session.add(user)
+
+            db.session.commit()
+
+ 
+
     def tearDown(self):
-        db.session.remove()
-        db.drop_all()
 
-    # Helper methods
-    def login_diff(self, username,password , confirm_password):
-        self.app.post("/register", form=RegistrationForm(username=username, password=password, confirm_password = confirm_password, submit = True), follow_redirects=True)
-        return self.app.post('/login', form=LoginForm(username=username, password=password, submit = True), follow_redirects=True)
-    
-    
-    def login(self, username, password):
-        self.app.post("/register", data=RegistrationForm(username=username, password=password ,confirm_password = password ), follow_redirects=True)
-        return self.app.post('/login', data=LoginForm(username=username, password=password), follow_redirects=True)
-    #A closer way to what you send me
-    def add_post(self, title, content, quantity):
-        return self.app.post("/post/new", data=PostForm(title=title, content=content, price=quantity), follow_redirects=True)
-    #What I think should work on the code, since the submit is what send the POST request
-    def add_post_diff(self, title, content, quantity):
-        return self.app.post("/post/new", data=PostForm(title=title, content=content, price=quantity, submit = True), follow_redirects=True)
+        with app.app_context():
 
-    def delete_item(self, post_id):
-        return self.app.post("/post/<int:post_id>/delete", data=dict(post_id=post_id), follow_redirects=True)
+            db.session.remove()
 
-    # Test adding item
+            db.drop_all()
+
+ 
+
+    def login(self, email, password):
+
+        response = self.app.post('/login', data=dict(
+
+            email=email,
+
+            password=password
+
+        ), follow_redirects=True)
+
+        return response
+
+ 
+
+    def add_post(self, title, content, price):
+
+        response = self.app.post('/post/new', data=dict(
+
+            title=title,
+
+            content=content,
+
+            price=price
+
+        ), follow_redirects=True)
+
+        return response
+
+ 
+
+    def delete_post(self, post_id):
+
+        response = self.app.post(f'/post/{post_id}/delete', follow_redirects=True)
+
+        return response
+
+ 
+
     def test_add_post(self):
-        self.login('testuser', 'testpassword')
-        response = self.add_post('Test', "contnet try",10)
+
+        self.login('test@example.com', 'testpassword')
+
+        response = self.add_post('Test Post', 'This is a test post.', 10)
+
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Item added successfully!', response.data)
 
+        post = Post.query.filter_by(title='Test Post').first()
 
-    def test_add_post_diff(self):
-        self.login('testuser', 'testpassword')
-        response = self.add_post('Test', "contnet try",10)
+        self.assertIsNotNone(post)
+
+        self.assertIn(b'Your post as been created!', response.data)
+
+ 
+
+    def test_delete_post(self):
+
+        self.login('test@example.com', 'testpassword')
+
+        self.add_post('Test Post', 'This is a test post.', 10)
+
+        post = Post.query.filter_by(title='Test Post').first()
+
+        self.assertIsNotNone(post)
+
+        response = self.delete_post(post.id)
+
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Item added successfully!', response.data)
 
-    # # Test adding item with special characters
-    # def test_add_item_with_special_characters(self):
-    #     self.login('testuser', 'testpassword')
-    #     response = self.add_item('Test @Item!', 5)
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertIn(b'Item added successfully!', response.data)
+        post = Post.query.get(post.id)
 
-    # # Test deleting item
-    # def test_delete_item(self):
-    #     self.login('testuser', 'testpassword')
-    #     self.add_item('Test Item', 10)
-    #     response = self.delete_item('Test Item')
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertIn(b'Item deleted successfully!', response.data)
+        self.assertIsNone(post)
 
-    # # Test deleting non-existent item
-    # def test_delete_nonexistent_item(self):
-    #     self.login('testuser', 'testpassword')
-    #     response = self.delete_item('Nonexistent Item')
-    #     self.assertEqual(response.status_code, 404)
-    #     self.assertIn(b'Item not found', response.data)
-
-    # # Test deleting item with special characters
-    # def test_delete_item_with_special_characters(self):
-    #     self.login('testuser', 'testpassword')
-    #     self.add_item('Test @Item!', 5)
-    #     response = self.delete_item('Test @Item!')
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertIn(b'Item deleted successfully!', response.data)
+ 
 
 if __name__ == "__main__":
+
     unittest.main()
